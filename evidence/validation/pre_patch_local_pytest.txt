@@ -1,0 +1,128 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.9, pytest-8.4.2, pluggy-1.5.0 -- /opt/anaconda3/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/fabinho/Library/CloudStorage/OneDrive-UniversidadedeCoimbra/UC-MEI-Cibersecurity/2 ano/CSL/cybersecurity_lab_devsecops
+plugins: anyio-4.10.0
+collecting ... collected 9 items
+
+tests_security/test_file_access.py::test_authenticated_user_can_download_material PASSED [ 11%]
+tests_security/test_file_access.py::test_anonymous_user_cannot_download_material FAILED [ 22%]
+tests_security/test_file_access.py::test_parent_directory_traversal_is_blocked FAILED [ 33%]
+tests_security/test_file_access.py::test_absolute_path_escape_is_blocked FAILED [ 44%]
+tests_security/test_grade_authorization.py::test_assigned_professor_can_update_grade PASSED [ 55%]
+tests_security/test_grade_authorization.py::test_admin_can_update_grade PASSED [ 66%]
+tests_security/test_grade_authorization.py::test_anonymous_user_cannot_update_grade FAILED [ 77%]
+tests_security/test_grade_authorization.py::test_student_cannot_update_own_grade FAILED [ 88%]
+tests_security/test_grade_authorization.py::test_professor_cannot_update_unassigned_course FAILED [100%]
+
+=================================== FAILURES ===================================
+_________________ test_anonymous_user_cannot_download_material _________________
+
+client = <FlaskClient <Flask 'baseline_secure_coding_api'>>
+sample_files = {'allowed': PosixPath('/private/var/folders/g8/qc7m0z3j75dfd8cg8mflgmbh0000gn/T/pytest-of-fabinho/pytest-2/test_anonym...r/folders/g8/qc7m0z3j75dfd8cg8mflgmbh0000gn/T/pytest-of-fabinho/pytest-2/test_anonymous_user_cannot_dow0/private.txt')}
+
+    def test_anonymous_user_cannot_download_material(client, sample_files):
+        response = client.get("/files", query_string={"path": "allowed.txt"})
+    
+>       assert response.status_code == 401
+E       assert 200 == 401
+E        +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+
+tests_security/test_file_access.py:46: AssertionError
+__________________ test_parent_directory_traversal_is_blocked __________________
+
+client = <FlaskClient <Flask 'baseline_secure_coding_api'>>
+sample_files = {'allowed': PosixPath('/private/var/folders/g8/qc7m0z3j75dfd8cg8mflgmbh0000gn/T/pytest-of-fabinho/pytest-2/test_parent...r/folders/g8/qc7m0z3j75dfd8cg8mflgmbh0000gn/T/pytest-of-fabinho/pytest-2/test_parent_directory_traversa0/private.txt')}
+
+    def test_parent_directory_traversal_is_blocked(client, sample_files):
+        login_student(client)
+    
+        response = client.get(
+            "/files",
+            query_string={"path": "../private.txt"},
+        )
+    
+>       assert 400 <= response.status_code < 500
+E       assert 400 <= 200
+E        +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+
+tests_security/test_file_access.py:59: AssertionError
+_____________________ test_absolute_path_escape_is_blocked _____________________
+
+client = <FlaskClient <Flask 'baseline_secure_coding_api'>>
+sample_files = {'allowed': PosixPath('/private/var/folders/g8/qc7m0z3j75dfd8cg8mflgmbh0000gn/T/pytest-of-fabinho/pytest-2/test_absolu...r/folders/g8/qc7m0z3j75dfd8cg8mflgmbh0000gn/T/pytest-of-fabinho/pytest-2/test_absolute_path_escape_is_b0/private.txt')}
+
+    def test_absolute_path_escape_is_blocked(client, sample_files):
+        login_student(client)
+    
+        response = client.get(
+            "/files",
+            query_string={"path": str(sample_files["outside"])},
+        )
+    
+>       assert 400 <= response.status_code < 500
+E       assert 400 <= 200
+E        +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+
+tests_security/test_file_access.py:72: AssertionError
+___________________ test_anonymous_user_cannot_update_grade ____________________
+
+client = <FlaskClient <Flask 'baseline_secure_coding_api'>>
+
+    def test_anonymous_user_cannot_update_grade(client):
+        original = api.find_grade(1001, "SRS")["grade"]
+    
+        response = client.post(
+            "/grades/update",
+            json={"student_id": 1001, "course_id": "SRS", "grade": 19},
+        )
+    
+>       assert response.status_code == 401
+E       assert 200 == 401
+E        +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+
+tests_security/test_grade_authorization.py:50: AssertionError
+_____________________ test_student_cannot_update_own_grade _____________________
+
+client = <FlaskClient <Flask 'baseline_secure_coding_api'>>
+
+    def test_student_cannot_update_own_grade(client):
+        login(client, "alice", "alicepw")
+        original = api.find_grade(1001, "SRS")["grade"]
+    
+        response = client.post(
+            "/grades/update",
+            json={"student_id": 1001, "course_id": "SRS", "grade": 19},
+        )
+    
+>       assert response.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+
+tests_security/test_grade_authorization.py:64: AssertionError
+________________ test_professor_cannot_update_unassigned_course ________________
+
+client = <FlaskClient <Flask 'baseline_secure_coding_api'>>
+
+    def test_professor_cannot_update_unassigned_course(client):
+        login(client, "prof_srs", "profpw")
+        original = api.find_grade(1001, "SSD")["grade"]
+    
+        response = client.post(
+            "/grades/update",
+            json={"student_id": 1001, "course_id": "SSD", "grade": 19},
+        )
+    
+>       assert response.status_code == 403
+E       assert 200 == 403
+E        +  where 200 = <WrapperTestResponse streamed [200 OK]>.status_code
+
+tests_security/test_grade_authorization.py:78: AssertionError
+=========================== short test summary info ============================
+FAILED tests_security/test_file_access.py::test_anonymous_user_cannot_download_material
+FAILED tests_security/test_file_access.py::test_parent_directory_traversal_is_blocked
+FAILED tests_security/test_file_access.py::test_absolute_path_escape_is_blocked
+FAILED tests_security/test_grade_authorization.py::test_anonymous_user_cannot_update_grade
+FAILED tests_security/test_grade_authorization.py::test_student_cannot_update_own_grade
+FAILED tests_security/test_grade_authorization.py::test_professor_cannot_update_unassigned_course
+========================= 6 failed, 3 passed in 0.05s ==========================
